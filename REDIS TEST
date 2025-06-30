@@ -1,0 +1,50 @@
+cat > TelnetLikeRedis.java <<EOF
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.Socket;
+
+public class TelnetLikeRedis {
+
+    public static void main(String[] args) {
+        // Leggi host da REDIS_HOST, default "localhost"
+        String host = System.getenv("REDIS_HOST");
+        if (host == null || host.isEmpty()) {
+            host = "localhost";
+        }
+
+        // Leggi porta da REDIS_PORT, default 6379
+        int port = 6379;
+        String portStr = System.getenv("REDIS_PORT");
+        if (portStr != null && !portStr.isEmpty()) {
+            try {
+                port = Integer.parseInt(portStr);
+            } catch (NumberFormatException e) {
+                System.err.println("⚠️ Valore REDIS_PORT non valido: " + portStr + " — uso default 6379");
+            }
+        }
+
+        System.out.println("Tentativo di connessione a Redis su " + host + ":" + port);
+
+        try (Socket socket = new Socket(host, port)) {
+            System.out.println("✅ Connessione TCP aperta.");
+
+            OutputStream out = socket.getOutputStream();
+            out.write("*1\r\n$4\r\nPING\r\n".getBytes());
+            out.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            String response = in.readLine();
+            System.out.println("✅ Risposta Redis: " + response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Errore nella connessione a Redis:");
+            System.err.println("Host: " + host);
+            System.err.println("Porta: " + port);
+            System.err.println("Eccezione: " + e.getClass().getName());
+            System.err.println("Messaggio: " + e.getMessage());
+            e.printStackTrace(System.err);
+        }
+    }
+}
+EOF
